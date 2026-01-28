@@ -1,6 +1,6 @@
 (https://github.com/user-attachments/files/24898592/readme.txt)
 
-这是一个全流程的音频/视频工程套件，它整合了从 资源获取 (B站/YouTube)，使用yt-dlp（https://github.com/yt-dlp/yt-dlp）到格式解密/转换（ncmd）(NCM/Smart Convert)，再到元数据整理 (Apple Music Packer) 的一站式工作流。
+这是一个全流程的音频/视频工程套件，它整合了从 资源获取 (B站/YouTube)，使用yt-dlp（https://github.com/yt-dlp/yt-dlp)到格式解密/转换（ncmd），再到元数据整理 (Apple Music Packer) 的一站式工作流。
 
 主要功能
 
