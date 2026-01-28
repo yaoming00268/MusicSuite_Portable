@@ -15,13 +15,10 @@ try:
 except ImportError:
     print("请先安装库: pip install mutagen")
     sys.exit()
-
-
 class PackWorker(QThread):
     log = pyqtSignal(str)
     progress = pyqtSignal(int)
     finished = pyqtSignal()
-
     def __init__(self, files, album_name, album_artist, cover_path, auto_track):
         super().__init__()
         self.files = files
@@ -29,76 +26,58 @@ class PackWorker(QThread):
         self.album_artist = album_artist
         self.cover_path = cover_path
         self.auto_track = auto_track
-
     def run(self):
         total = len(self.files)
         self.log.emit(f"🚀 开始打包 {total} 首歌曲...")
-
-        # 读取封面数据
         cover_data = None
         if self.cover_path and os.path.exists(self.cover_path):
             with open(self.cover_path, 'rb') as f:
                 cover_data = f.read()
-
         for idx, file_path in enumerate(self.files):
             try:
                 filename = os.path.basename(file_path)
                 ext = os.path.splitext(filename)[1].lower()
                 self.log.emit(f"正在处理 [{idx + 1}/{total}]: {filename}")
-
                 track_num = idx + 1 if self.auto_track else None
-
                 if ext == '.m4a' or ext == '.mp4':
                     self.tag_m4a(file_path, cover_data, track_num)
                 elif ext == '.mp3':
                     self.tag_mp3(file_path, cover_data, track_num)
                 elif ext == '.flac':
                     self.tag_flac(file_path, cover_data, track_num)
-
                 self.progress.emit(int((idx + 1) / total * 100))
-
             except Exception as e:
                 self.log.emit(f"❌ 错误: {filename} - {e}")
-
         self.finished.emit()
-
     def tag_m4a(self, path, cover_data, track_num):
         audio = MP4(path)
-
         # 写入专辑名
         if self.album_name:
             audio['\xa9alb'] = self.album_name
-        # 写入专辑艺术家 (重要！这是聚合的关键)
+        # 写入专辑艺术家
         if self.album_artist:
             audio['aART'] = self.album_artist
-
-        # 写入音轨号 (Track Number)
+        # 写入音轨号
         if track_num:
             # trkn 格式是 tuple: (track_num, total_tracks)
             audio['trkn'] = [(track_num, len(self.files))]
-
         # 写入封面
         if cover_data:
             # 自动检测格式
             fmt = MP4Cover.FORMAT_PNG if self.cover_path.lower().endswith('.png') else MP4Cover.FORMAT_JPEG
             audio['covr'] = [MP4Cover(cover_data, imageformat=fmt)]
-
         audio.save()
-
     def tag_mp3(self, path, cover_data, track_num):
         try:
             audio = ID3(path)
         except:
-            audio = ID3()  # 如果没有标签则创建
-
+            audio = ID3()  
         if self.album_name:
             audio.add(TALB(encoding=3, text=self.album_name))
         if self.album_artist:
             audio.add(TPE2(encoding=3, text=self.album_artist))
-
         if track_num:
             audio.add(TRCK(encoding=3, text=f"{track_num}/{len(self.files)}"))
-
         if cover_data:
             mime = 'image/png' if self.cover_path.lower().endswith('.png') else 'image/jpeg'
             audio.add(APIC(
@@ -109,16 +88,13 @@ class PackWorker(QThread):
                 data=cover_data
             ))
         audio.save(path)
-
     def tag_flac(self, path, cover_data, track_num):
         audio = FLAC(path)
-
         if self.album_name: audio['album'] = self.album_name
         if self.album_artist: audio['albumartist'] = self.album_artist
         if track_num:
             audio['tracknumber'] = str(track_num)
             audio['totaltracks'] = str(len(self.files))
-
         if cover_data:
             p = Picture()
             p.type = 3
@@ -129,10 +105,7 @@ class PackWorker(QThread):
             p.data = cover_data
             audio.clear_pictures()
             audio.add_picture(p)
-
         audio.save()
-
-
 class AlbumPacker(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -140,7 +113,6 @@ class AlbumPacker(QMainWindow):
         self.setGeometry(300, 300, 600, 700)
         self.init_ui()
         self.apply_styles()
-
     def init_ui(self):
         main = QWidget()
         self.setCentralWidget(main)
@@ -208,7 +180,7 @@ class AlbumPacker(QMainWindow):
 
         self.log_txt = QTextEdit()
         self.log_txt.setMaximumHeight(100)
-        self.log_txt.setReadOnly(True)  # 设置为只读
+        self.log_txt.setReadOnly(True)  
         layout.addWidget(self.log_txt)
 
         # 4. 执行按钮
@@ -216,7 +188,6 @@ class AlbumPacker(QMainWindow):
         self.btn_run.setMinimumHeight(50)
         self.btn_run.clicked.connect(self.start_packing)
         layout.addWidget(self.btn_run)
-
     def add_files(self):
         files, _ = QFileDialog.getOpenFileNames(self, "选择音频", "", "Audio (*.m4a *.mp3 *.flac *.mp4)")
         if files:
@@ -225,7 +196,6 @@ class AlbumPacker(QMainWindow):
                 items = [self.list_widget.item(i).text() for i in range(self.list_widget.count())]
                 if f not in items:
                     self.list_widget.addItem(f)
-
     def sel_cover(self):
         f, _ = QFileDialog.getOpenFileName(self, "选择封面", "", "Images (*.jpg *.png *.jpeg)")
         if f: self.in_cover.setText(f)
@@ -274,10 +244,9 @@ class AlbumPacker(QMainWindow):
             QProgressBar::chunk { background-color: #e74c3c; }
             QTextEdit { background-color: #333; border: 1px solid #555; }
         """)
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = AlbumPacker()
     w.show()
+
     sys.exit(app.exec())
